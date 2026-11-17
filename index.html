@@ -18,7 +18,7 @@ h2{font:700 16px Georgia,serif;margin:0 0 6px}ul{margin:0;padding-left:20px}img.
 .sec{background:var(--sf);color:var(--ink);border:1px solid var(--ln)}
 .row{display:block;text-align:left;background:var(--sf);color:var(--ink);border:1px solid var(--ln);margin:0 0 8px;font-weight:400;padding:10px 12px}
 .row .n{display:block;margin-top:2px}.pill{display:inline-block;font:700 12px system-ui,sans-serif;padding:1px 8px;border-radius:99px;border:1px solid currentColor;margin-left:8px}
-.s-READY{color:var(--buy)}.s-WAITING{color:var(--wr)}.s-WATCHLIST{color:var(--mut)}.alert{border:2px solid var(--buy)}
+.s-READY,.s-SNIPER,.s-ELITE{color:var(--buy)}.s-WAITING{color:var(--wr)}.s-WATCHLIST{color:var(--mut)}.alert{border:2px solid var(--buy)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
 .tile{display:flex;flex-direction:column;gap:3px;text-align:left;background:var(--sf);color:var(--ink);border:1px solid var(--ln);font-weight:400;padding:10px;margin:0}
 .tile.rdy{border:2px solid var(--buy)}.tile>span{display:block}.tile img{margin:0 0 4px}
@@ -127,9 +127,10 @@ img.shot,canvas.shot{border:1px solid rgba(212,175,55,.35)}
 <details class="card"><summary>Search any market and scan settings</summary><select id="sym" aria-label="Market"></select>
 <input id="cs" aria-label="Custom symbol code" placeholder="Or type any Deriv symbol code, e.g. JD50" autocapitalize="off" autocomplete="off" spellcheck="false">
 <select id="scope" aria-label="Markets to scan"><option value="core">Scanning: core markets</option><option value="all">Scanning: all open Deriv markets</option></select>
+<label for="strategy" class="n">Trading strategy</label><select id="strategy" aria-label="Trading strategy"><option value="APA_BLUE">APA BLUE · D1 / H4 / H1 / M15 / M5</option><option value="ORIGINAL">Original H1 / M15 scalp</option></select>
 <button id="go">Analyze the market chosen above now</button></details>
 <div id="sheet" hidden><div><button id="bk" class="sec">&larr; Back to dashboard</button><div id="out"></div></div></div>
-<p class="n">Rules are coded from the XAUUSD scalping strategy notes (H1 and M15 context, premium and discount, OB, FVG and old highs and lows, liquidity sweep, CHOCH or MSS confirmation on M5 with M1 as an early sign, structure stop, TP1 and TP2, 10 point checklist) with my interpretation where the notes give no numbers. Not automated: lot size, news avoidance, manual zone marking and your own FOMO check. Session hours are about 07:00 to 21:00 UTC and ignore daylight saving. Dashed projected levels are not live orders. The scanner reads closed candles only, skips closed markets and stale feeds, and works only while this page stays open with the screen on (browsers pause background pages). Not financial advice; confirm on your chart.</p>
+<p class="n">APA BLUE uses D1/H4 for directional bias, H1 for setup formation, and requires independent M15 and M5 closed-candle confirmations before an entry signal. The Original strategy remains available separately. Not automated: lot size, news avoidance, manual zone marking and your own FOMO check. Session hours are about 07:00 to 21:00 UTC and ignore daylight saving. Dashed projected levels are not live orders. The scanner reads closed candles only, skips closed markets and stale feeds, and works only while this page stays open with the screen on (browsers pause background pages). Not financial advice; confirm on your chart.</p>
 <p class="fyg-slogan">GOLD MOVES. WE EXECUTE.</p>
 </main><script>
 var SY=[["frxXAUUSD","Gold (XAU/USD)"],["R_10","Volatility 10"],["R_25","Volatility 25"],["R_50","Volatility 50"],["R_75","Volatility 75"],["R_100","Volatility 100"],["1HZ10V","Volatility 10 (1s)"],["1HZ25V","Volatility 25 (1s)"],["1HZ50V","Volatility 50 (1s)"],["1HZ75V","Volatility 75 (1s)"],["1HZ100V","Volatility 100 (1s)"],["BOOM500","Boom 500"],["BOOM1000","Boom 1000"],["CRASH500","Crash 500"],["CRASH1000","Crash 1000"],["BOOM300N","Boom 300"],["CRASH300N","Crash 300"],["BOOM600","Boom 600"],["CRASH600","Crash 600"],["BOOM900","Boom 900"],["CRASH900","Crash 900"],["1HZ150V","Volatility 150 (1s)"],["1HZ250V","Volatility 250 (1s)"],["JD10","Jump 10"],["JD25","Jump 25"],["JD50","Jump 50"],["JD75","Jump 75"],["JD100","Jump 100"],["stpRNG","Step Index"],["frxEURUSD","EUR/USD"],["frxGBPUSD","GBP/USD"],["frxUSDJPY","USD/JPY"],["frxAUDUSD","AUD/USD"],["frxUSDCAD","USD/CAD"],["frxUSDCHF","USD/CHF"],["frxNZDUSD","NZD/USD"],["frxEURGBP","EUR/GBP"],["frxEURJPY","EUR/JPY"],["frxGBPJPY","GBP/JPY"],["frxXAGUSD","Silver (XAG/USD)"],["cryBTCUSD","BTC/USD"],["cryETHUSD","ETH/USD"]];
@@ -377,9 +378,10 @@ function symsFrom(d){return (d.active_symbols||[]).filter(function(s){return !s.
 var ST={run:true,fatal:false,cyc:0,cur:"",idx:0,tot:0,pass:0,note:"",ln:"",list:[],reload:false},listDone,LP=new Promise(function(r){listDone=r});
 (function nx(i){if(i>=U.length){ST.ln="Using the built-in market list.";listDone();return}
  open1(U[i]).then(function(C){return C.req({active_symbols:"brief"}).then(function(d){C.s.close();var l=symsFrom(d);if(l.length<5)throw 0;fillSyms(l);ST.ln=l.length+" markets loaded from Deriv.";listDone()},function(e){C.s.close();throw e})}).catch(function(){nx(i+1)})})(0);
-var RK={"READY":3,"WAITING":2,"WATCHLIST":1,"NO TRADE":0},SECMSG="This viewer blocks live connections from local files. Open this page from an https web address (for example your own free GitHub Pages or Netlify site) instead of from Files.",
+var RK={"ELITE":5,"SNIPER":4,"READY":3,"WAITING":2,"WATCHLIST":1,"NO TRADE":0},SECMSG="This viewer blocks live connections from local files. Open this page from an https web address (for example your own free GitHub Pages or Netlify site) instead of from Files.",
  RES={},ERR={},LS={},PS={},ALOG=[],FOC=null,CN=null,CNP=null,CA={},NF=0,TCH=0,AC=null,WLK=null,AL={on:false},LMAX=[150,9000],LIM={m:[],h:[]},MINCYC=20000;
 var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+try{$("strategy").value=localStorage.getItem("apa.strategy")||"APA_BLUE"}catch(e){}
 var FILT="all",PIN={},SHOTS=[],LVM={},LVW=[],LVS=null,LVU=0;
 try{PIN=JSON.parse(localStorage.getItem("apa.pin")||"{}");SHOTS=JSON.parse(localStorage.getItem("apa.shots")||"[]");ALOG=JSON.parse(localStorage.getItem("apa.alog")||"[]");
  var sv=JSON.parse(localStorage.getItem("apa.res")||"{}");Object.keys(sv).forEach(function(k){var r=sv[k];if(r&&r.t&&r.t.status){r.cached=true;RES[k]=r;PS[k]=r.t.status+" "+r.t.dir+(r.stale?" stale":"")}})}catch(e){}
@@ -427,18 +429,99 @@ async function cand(sym,g,cap){var k=sym+"|"+g,e=CA[k],t0=Date.now()/1000,a=null
  CA[k]={a:a,at:t0};return a}
 function tick(sym){var one=function(d){var t=d.tick;return {quote:+t.quote,ask:+t.ask,bid:+t.bid,epoch:t.epoch,pip:t.pip_size}};
  return rq({ticks:sym}).then(one).catch(function(e){if(e&&(e.code==="RateLimit"||e.net))throw e;return rq({ticks_history:sym,end:"latest",count:1,style:"ticks"}).then(function(d){return {quote:+d.history.prices[0],epoch:d.history.times[0]}})})}
+
+/* APA BLUE: multi-timeframe filter. D1/H4 define bias; H1 defines the setup; M15 and M5 must each confirm with a closed-candle liquidity sweep and structure break. */
+function apaTrend(a){var p=piv(a),h=p.H.slice(-2),l=p.L.slice(-2);if(h.length<2||l.length<2)return 0;
+ return h[1].p>h[0].p&&l[1].p>l[0].p?1:(h[1].p<h[0].p&&l[1].p<l[0].p?-1:0)}
+function apaConfirm(a,dir){
+ var n=a.length,start=Math.max(12,n-35),sweep=-1,ext=dir>0?1e100:-1e100,level=0,breakLevel=0,breakAt=-1;
+ if(n<35)return null;
+ for(var i=start;i<n-3;i++){
+  var lo=1e100,hi=-1e100;
+  for(var j=Math.max(0,i-12);j<i;j++){lo=Math.min(lo,a[j].l);hi=Math.max(hi,a[j].h)}
+  if(dir>0&&a[i].l<lo&&a[i].c>lo){sweep=i;ext=a[i].l;level=lo}
+  if(dir<0&&a[i].h>hi&&a[i].c<hi){sweep=i;ext=a[i].h;level=hi}
+ }
+ if(sweep<0)return null;
+ if(dir>0){breakLevel=-1e100;for(var k=Math.max(0,sweep-12);k<sweep;k++)breakLevel=Math.max(breakLevel,a[k].h);
+  for(k=sweep+1;k<n;k++)if(a[k].c>breakLevel){breakAt=k;break}}
+ else{breakLevel=1e100;for(var q=Math.max(0,sweep-12);q<sweep;q++)breakLevel=Math.min(breakLevel,a[q].l);
+  for(q=sweep+1;q<n;q++)if(a[q].c<breakLevel){breakAt=q;break}}
+ if(breakAt<0)return {sweep:sweep,ext:ext,level:level,confirmed:false,breakLevel:breakLevel};
+ var displacement=Math.abs(a[breakAt].c-a[breakAt].o)>=.6*atr(a);
+ return {sweep:sweep,ext:ext,level:level,confirmed:true,breakAt:breakAt,breakLevel:breakLevel,displacement:displacement};
+}
+function apaOrderBlock(a,conf,dir){
+ if(!conf||!conf.confirmed)return null;
+ for(var i=conf.breakAt-1;i>=Math.max(0,conf.breakAt-8);i--){
+  if((dir>0&&a[i].c<a[i].o)||(dir<0&&a[i].c>a[i].o))
+   return {lo:a[i].l,hi:a[i].h,at:a[i].t,index:i,kind:"H1 order block"};
+ }
+ return null;
+}
+function scanApa(D,price,spr,tt,sym){
+ var H=D.H1,M15=D.M15,M5=D.M5,D1=D.D1,H4=D.H4,all=[D1,H4,H,M15,M5],bars=M5.slice(-90);
+ var R={dir:"WAIT",dirn:"WAIT",cy:"APA BLUE",miss:[],x:[],score:0,status:"WATCHLIST"};
+ var fail=function(msg){R.status="WATCHLIST";R.miss.push(msg);R.trigger=msg;R.ch={bars:bars,tf:"M5",dir:"BUY",price:price,tt:tt,fig:["APA BLUE · no entry confirmation"]};return R};
+ if(all.some(function(a){return !a||a.length<35}))return fail("Waiting for enough closed D1, H4, H1, M15 and M5 candles.");
+ var t1=apaTrend(D1),t4=apaTrend(H4),tH=apaTrend(H);
+ if(!t1||!t4||t1!==t4)return fail("D1 and H4 do not have the same clear directional structure. No trade.");
+ var dir=t1,side=dir>0?"BUY":"SELL",word=dir>0?"bullish":"bearish";
+ R.dir=side;R.dirn=side;
+ R.x.push(["D1 and H4 directional bias","D1 structure is "+(t1>0?"bullish":"bearish")+" and H4 structure is "+(t4>0?"bullish":"bearish")+". Both must agree before an APA BLUE setup is considered."]);
+ if(tH!==dir)return fail("H1 has not aligned with the D1/H4 "+word+" bias.");
+ var h1=apaConfirm(H,dir),c15=apaConfirm(M15,dir),c5=apaConfirm(M5,dir);
+ R.x.push(["H1 setup",h1?(h1.confirmed?"H1 liquidity sweep and structure break confirmed.":"H1 liquidity sweep detected; waiting for H1 structure break."):"No valid H1 liquidity sweep yet."]);
+ R.x.push(["M15 confirmation",c15?(c15.confirmed?"M15 liquidity sweep and structure break confirmed.":"M15 sweep detected; waiting for M15 structure break."):"No valid M15 confirmation yet."]);
+ R.x.push(["M5 confirmation",c5?(c5.confirmed?"M5 liquidity sweep and structure break confirmed.":"M5 sweep detected; waiting for M5 structure break."):"No valid M5 confirmation yet."]);
+ if(!h1||!h1.confirmed)return fail("H1 setup is incomplete. Wait for a closed-candle liquidity sweep and structure break.");
+ if(!c15||!c15.confirmed)return fail("H1 setup is present, but M15 has not independently confirmed. No entry.");
+ if(!c5||!c5.confirmed)return fail("M15 has confirmed, but M5 has not independently confirmed. No entry.");
+ var ob=apaOrderBlock(H,h1,dir);
+ if(!ob)return fail("All timeframe confirmations are present, but no clear H1 order block is available for a controlled entry.");
+ var entry=(ob.lo+ob.hi)/2,atr5=atr(M5),stop=dir>0?Math.min(h1.ext,ob.lo)-Math.max(spr*2,atr5*.15):Math.max(h1.ext,ob.hi)+Math.max(spr*2,atr5*.15);
+ var risk=Math.abs(entry-stop),inside=price>=ob.lo&&price<=ob.hi,notChasing=dir>0?price<=entry+atr5*.5:price>=entry-atr5*.5;
+ if(!(risk>0&&isFinite(risk)))return fail("Invalid stop distance. No trade.");
+ var rTargets=[10,15,20].map(function(m){return entry+dir*risk*m});
+ var liquidity=dir>0?M15.slice(-80).map(function(x){return x.h}):M15.slice(-80).map(function(x){return x.l});
+ var nearest=dir>0?Math.max.apply(null,liquidity.filter(function(x){return x>entry})||[]):Math.min.apply(null,liquidity.filter(function(x){return x<entry})||[]);
+ var viable=isFinite(nearest)&&nearest>0&&(dir>0?nearest>=entry+risk*10:nearest<=entry-risk*10);
+ R.entry=entry.toFixed(DP)+" (H1 OB midpoint)";R.sl=stop.toFixed(DP);
+ R.tp=viable?rTargets.map(function(x,i){return x.toFixed(DP)+" (1:"+[10,15,20][i]+")"}):[];
+ R.zone="H1 order block "+Math.min(ob.lo,ob.hi).toFixed(DP)+" – "+Math.max(ob.lo,ob.hi).toFixed(DP);
+ R.score=10;R.status=inside&&notChasing&&viable?"ELITE":(inside&&notChasing?"SNIPER":"WAITING");
+ R.trigger=R.status==="ELITE"?"D1/H4 bias, H1 setup, M15 confirmation and M5 confirmation all passed; price is in the H1 order block and the 1:10 liquidity objective is structurally viable.":R.status==="SNIPER"?"All five timeframe conditions passed and price is in the entry zone. Extended 1:10–1:20 targets are not supported by the currently measured opposing liquidity.":"All confirmations passed. Wait for price to return to the H1 order block; do not chase.";
+ if(!inside)R.miss.push("Price is not inside the H1 order block yet.");
+ if(!notChasing)R.miss.push("Price has moved too far from the planned entry. Wait for a retracement.");
+ if(!viable)R.miss.push("Opposing M15 liquidity does not currently support a genuine 1:10 target; extended targets are withheld.");
+ R.prow=[["Risk per unit",risk.toFixed(DP)],["H1 order block",R.zone]];
+ if(viable)R.prow=R.prow.concat(rTargets.map(function(x,i){return ["Target 1:"+[10,15,20][i],x.toFixed(DP)]}));
+ R.ch={bars:bars,tf:"M5",dir:side,price:price,tt:tt,zone:[Math.min(ob.lo,ob.hi),Math.max(ob.lo,ob.hi)],en:entry,sl:stop,tps:viable?rTargets:[],rr:viable?[10,15,20]:[],fig:["APA BLUE · D1/H4 bias aligned","H1 setup confirmed","M15 confirmation passed","M5 confirmation passed","Entry "+entry.toFixed(DP)+" · SL "+stop.toFixed(DP)]};
+ if(viable)rTargets.forEach(function(x,i){R.ch.fig.push("TP"+(i+1)+" "+x.toFixed(DP)+" · 1:"+[10,15,20][i])});
+ return R;
+}
+
+
 async function analyze(sym,nm){
- var r=await Promise.all([cand(sym,3600,1000),cand(sym,900,1000),cand(sym,300,1000),cand(sym,60,600),tick(sym)]),tk=r[4],now=Date.now()/1000,D={};
+ var apa=$("strategy").value==="APA_BLUE",jobs=apa?
+  [cand(sym,86400,500),cand(sym,14400,700),cand(sym,3600,1000),cand(sym,900,1000),cand(sym,300,1000),tick(sym)]:
+  [cand(sym,3600,1000),cand(sym,900,1000),cand(sym,300,1000),cand(sym,60,600),tick(sym)];
+ var r=await Promise.all(jobs),tk=r[apa?5:4],now=Date.now()/1000,D={};
  if(!isFinite(tk.quote)||!(tk.quote>0))throw new Error("No live price for "+nm);
  DP=Number.isInteger(tk.pip)&&tk.pip>=0&&tk.pip<=8?tk.pip:tk.pip>0&&tk.pip<1?Math.min(8,Math.round(-Math.log10(tk.pip))):Math.min(6,Math.max(2,(String(tk.quote).split(".")[1]||"").length));
- D.H1=closed(r[0],3600);D.M15=closed(r[1],900);D.M5=closed(r[2],300);D.M1=closed(r[3],60);
- var price=tk.quote,spr=tk.ask&&tk.bid?Math.abs(tk.ask-tk.bid):0,age=now-tk.epoch,res=[],er=null;
- Object.keys(CY).forEach(function(n){var c=CY[n];c.name=n;["SELL","BUY"].forEach(function(d){try{res.push(scan(d,c,D,price,spr,tk.epoch,sym))}catch(e){er=e}})});
- if(!res.length)throw new Error("Analysis failed: "+(er&&er.message?er.message:"no data"));
- res.sort(function(a,b){return (RK[b.status]||0)-(RK[a.status]||0)||b.score-a.score});
- var t=res[0];
+ if(apa){D.D1=closed(r[0],86400);D.H4=closed(r[1],14400);D.H1=closed(r[2],3600);D.M15=closed(r[3],900);D.M5=closed(r[4],300);}
+ else{D.H1=closed(r[0],3600);D.M15=closed(r[1],900);D.M5=closed(r[2],300);D.M1=closed(r[3],60);}
+ var price=tk.quote,spr=tk.ask&&tk.bid?Math.abs(tk.ask-tk.bid):0,age=now-tk.epoch,t;
+ if(apa)t=scanApa(D,price,spr,tk.epoch,sym);
+ else{
+  var res=[],er=null;
+  Object.keys(CY).forEach(function(n){var c=CY[n];c.name=n;["SELL","BUY"].forEach(function(d){try{res.push(scan(d,c,D,price,spr,tk.epoch,sym))}catch(e){er=e}})});
+  if(!res.length)throw new Error("Analysis failed: "+(er&&er.message?er.message:"no data"));
+  res.sort(function(a,b){return (RK[b.status]||0)-(RK[a.status]||0)||b.score-a.score});t=res[0];
+ }
  if(t.ch)t.ch.fig.unshift("Live "+f(price)+" · tick "+tm(tk.epoch)+" ("+Math.round(age)+"s old)",tk.bid&&tk.ask?"Bid "+f(tk.bid)+" · Ask "+f(tk.ask)+" · Spread "+f(spr):"Spread not reported by feed","Score "+t.score+"/10 · "+t.status+" · "+(t.dirn||t.dir),t.cy+" · "+t.ch.tf+" candles");
- return {sym:sym,nm:nm,t:t,price:price,spr:spr,tk:tk,age:age,at:now,dp:DP,stale:age>300,line:t.ch&&t.ch.en!=null?"Entry "+f(t.ch.en)+" · SL "+f(t.ch.sl):(t.zone?"Zone "+t.zone:"")}}
+ return {sym:sym,nm:nm,t:t,price:price,spr:spr,tk:tk,age:age,at:now,dp:DP,stale:age>300,line:t.ch&&t.ch.en!=null?"Entry "+f(t.ch.en)+" · SL "+f(t.ch.sl):(t.zone?t.zone:"")};
+}
 function detail(r){DP=r.dp;var t=r.t,tk=r.tk,price=r.price,spr=r.spr,age=r.age,o=$("out"),dec=t.status==="READY"?t.dirn:(t.status==="WAITING"?"WAIT FOR "+t.dirn:"NO TRADE"),cl=t.status==="READY"?t.dirn:(t.status==="WAITING"?"WAIT":"");
  var rows=[["Market",r.nm],["Live price",f(price)+(spr?" (bid "+f(tk.bid)+" / ask "+f(tk.ask)+", spread "+f(spr)+")":"")],["Tick age",Math.round(age)+"s"+(age>300?" · feed looks stale or market closed":"")],["Scanned",new Date(r.at*1000).toLocaleTimeString()],["Strategy",t.cy],["Status",t.status],["Score",t.score+" / 10"],["Zone",t.zone],["Entry",t.entry],["Stop loss",t.sl]].concat(t.prow||[]).concat((t.tp||[]).map(function(x,i){return ["TP"+(i+1),x]})).filter(function(x){return x[1]});
  o.innerHTML='<button id="pn" class="sec" data-s="'+esc(r.sym)+'">'+(PIN[r.sym]?'★ Watching. Tap to remove':'☆ Watch this market')+'</button><div class="card"><p class="dec '+cl+'">'+esc(r.stale?"STALE FEED":dec)+'</p><p class="n" style="margin:0">'+esc(r.stale?"The price feed looks stale or the market is closed. Do not trade from this.":(t.trigger||"No valid setup. Wait for confirmation."))+'</p></div><div class="card"><table>'+rows.map(function(x){return "<tr><td>"+x[0]+"</td><td>"+esc(x[1])+"</td></tr>"}).join("")+'</table></div>'+
@@ -455,9 +538,9 @@ function sendTelegramAlert(r){
  .then(function(){$("tg-status").textContent="Telegram alert sent. Last sent: "+new Date().toLocaleTimeString()})
  .catch(function(e){$("tg-status").textContent="Telegram send failed: "+(e&&e.message?e.message:"check Worker URL and settings")});
 }
-function alertUp(r){var t=r.t,m=r.nm+" · "+t.dir+" · READY · score "+t.score+"/10";ALOG.unshift(new Date().toLocaleTimeString()+" · "+m);if(ALOG.length>6)ALOG.length=6;renderAl();sendTelegramAlert(r);
+function alertUp(r){var t=r.t,m=r.nm+" · "+t.dir+" · "+t.status+" · score "+t.score+"/10";ALOG.unshift(new Date().toLocaleTimeString()+" · "+m);if(ALOG.length>6)ALOG.length=6;renderAl();sendTelegramAlert(r);
  snap(r);if(AL.on){beep();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}try{if(window.Notification&&Notification.permission==="granted")new Notification("FUCK YOU GOLD READY",{body:m})}catch(e){}}}
-function note(r){var t=r.t,k=t.status+" "+t.dir+(r.stale?" stale":""),p=PS[r.sym];PS[r.sym]=k;if(t.status==="READY"&&!r.stale&&p!==k)alertUp(r)}
+function note(r){var t=r.t,k=t.status+" "+t.dir+(r.stale?" stale":""),p=PS[r.sym];PS[r.sym]=k;if((t.status==="READY"||t.status==="SNIPER"||t.status==="ELITE")&&!r.stale&&p!==k)alertUp(r)}
 async function scanOne(sym,nm){LS[sym]=Date.now();var r=await analyze(sym,nm);delete ERR[sym];RES[sym]=r;note(r);if(FOC===sym)detail(r);return r}
 async function guarded(sym,nm){try{await scanOne(sym,nm)}catch(e){if(e&&(e.name==="SecurityError"||e.code==="RateLimit"||e.net))throw e;var m=e&&e.message?e.message:String(e);ERR[sym]={m:m,at:Date.now()};if(FOC===sym)$("out").innerHTML='<div class="card"><p class="e">'+esc(nm+": "+m)+'</p></div>'}}
 async function focusTick(except){if(FOC&&FOC!==except&&Date.now()-(LS[FOC]||0)>15000)await guarded(FOC,RES[FOC]?RES[FOC].nm:FOC)}
@@ -506,6 +589,7 @@ $("out").addEventListener("click",function(e){var b=e.target&&e.target.closest?e
 $("bk").onclick=function(){FOC=null;$("sheet").hidden=true;document.body.style.overflow=""};
 $("pz").onclick=function(){ST.run=!ST.run;this.textContent=ST.run?"Pause scanning":"Resume scanning";if(ST.run){wl()}else{dropC();if(WLK){try{WLK.release()}catch(e){}WLK=null}}status()};
 $("scope").onchange=function(){ST.reload=true};
+$("strategy").onchange=function(){try{localStorage.setItem("apa.strategy",this.value)}catch(e){}RES={};ERR={};PS={};ST.reload=true;renderOpp()};
 $("nt").onclick=function(){AL.on=!AL.on;this.textContent=AL.on?"Alerts on (sound, vibration, notification). Tap to turn off":"Alerts off. Tap to enable sound, vibration and notifications";
  if(AL.on){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();AC.resume();beep()}catch(e){}try{if(window.Notification&&Notification.permission==="default")Notification.requestPermission()}catch(e){}}};
 document.addEventListener("visibilitychange",function(){if(!document.hidden)wl()});
