@@ -462,7 +462,7 @@ function apaOrderBlock(a,conf,dir){
 function scanApa(D,price,spr,tt,sym){
  var H=D.H1,M15=D.M15,M5=D.M5,D1=D.D1,H4=D.H4,all=[D1,H4,H,M15,M5],bars=M5.slice(-90);
  var R={dir:"WAIT",dirn:"WAIT",cy:"APA BLUE",miss:[],x:[],score:0,status:"WATCHLIST"};
- var fail=function(msg){R.status="WATCHLIST";R.miss.push(msg);R.trigger=msg;R.ch={bars:bars,tf:"M5",dir:"BUY",price:price,tt:tt,fig:["APA BLUE · no entry confirmation"]};return R};
+ var fail=function(msg){R.status="WATCHLIST";R.miss.push(msg);R.trigger=msg;R.ch={bars:bars,tf:"M5",dir:R.dir==="WAIT"?"BUY":R.dir,price:price,tt:tt,fig:["APA BLUE · no entry confirmation"]};return R};
  if(all.some(function(a){return !a||a.length<35}))return fail("Waiting for enough closed D1, H4, H1, M15 and M5 candles.");
  var t1=apaTrend(D1),t4=apaTrend(H4),tH=apaTrend(H);
  if(!t1||!t4||t1!==t4)return fail("D1 and H4 do not have the same clear directional structure. No trade.");
@@ -571,12 +571,12 @@ async function loop(){
   while(ST.run&&!ST.reload&&Date.now()-t0<MINCYC){try{await focusTick()}catch(e){}await sleep(500)}}}
 function row(r){var t=r.t,ag=Math.max(0,Math.round(Date.now()/1000-r.at));
  return '<button class="row" data-s="'+esc(r.sym)+'"><b>'+esc(r.nm)+'</b> <b class="'+t.dir+'">'+t.dir+'</b><span class="pill s-'+t.status.replace(" ","")+'">'+t.status+'</span><span class="n">'+t.score+'/10 · '+esc(t.cy)+(r.line?' · '+esc(r.line):'')+' · '+ag+'s ago</span></button>'}
-function renderOpp(){var L=ST.list||[],a=[],c={READY:0,WAITING:0,WATCHLIST:0},sk=0,er=0,ok={},cl=LST.filter(function(x){return x.closed}).length;
+function renderOpp(){var L=ST.list||[],a=[],c={ELITE:0,SNIPER:0,READY:0,WAITING:0,WATCHLIST:0},sk=0,er=0,ok={},cl=LST.filter(function(x){return x.closed}).length;
  L.forEach(function(u){ok[u.v]=1;if(ERR[u.v])er++});
- Object.keys(RES).forEach(function(k){var r=RES[k];if(ERR[k]||(L.length&&!ok[k]&&!PIN[k]))return;if(r.stale)sk++;else if(RK[r.t.status]>0)c[r.t.status]++;a.push(r)});
+ Object.keys(RES).forEach(function(k){var r=RES[k];if(ERR[k]||(L.length&&!ok[k]&&!PIN[k]))return;if(r.stale)sk++;else if(RK[r.t.status]>0)c[r.t.status]=(c[r.t.status]||0)+1;a.push(r)});
  var fl=a.filter(function(r){return FILT==="pin"?PIN[r.sym]:FILT==="top"?(!r.stale&&RK[r.t.status]>0):true});
  fl.sort(function(x,y){return (PIN[y.sym]?1:0)-(PIN[x.sym]?1:0)||(x.stale?1:0)-(y.stale?1:0)||RK[y.t.status]-RK[x.t.status]||y.t.score-x.t.score});
- $("sum").textContent=a.length?"Showing "+a.length+(L.length?" of "+L.length:"")+" markets · "+c.READY+" ready · "+c.WAITING+" waiting · "+c.WATCHLIST+" watchlist"+(sk?" · "+sk+" stale feed":"")+(er?" · "+er+" unavailable":"")+(cl?" · "+cl+" closed, skipped":""):"";
+ $("sum").textContent=a.length?"Showing "+a.length+(L.length?" of "+L.length:"")+" markets · "+c.ELITE+" elite · "+c.SNIPER+" sniper · "+c.READY+" ready · "+c.WAITING+" waiting · "+c.WATCHLIST+" watchlist"+(sk?" · "+sk+" stale feed":"")+(er?" · "+er+" unavailable":"")+(cl?" · "+cl+" closed, skipped":""):"";
  document.title=(c.READY?"("+c.READY+" READY) ":"")+"FUCK YOU GOLD · Deriv Live";
  $("opp").innerHTML='<div class="chips">'+[["all","All markets"],["top","Top setups"],["pin","★ Watching"]].map(function(x){return '<button class="chip'+(FILT===x[0]?" on":"")+'" data-f="'+x[0]+'">'+x[1]+'</button>'}).join("")+'</div>'+
   (fl.length?'<div class="grid">'+fl.slice(0,60).map(card).join("")+'</div><p class="n">Sorted by rating. Tap a market for the full plan and chart.</p>':'<div class="card"><p class="n">'+(FILT==="pin"?"Open a market and tap Watch to pin it here.":a.length?"No ready or waiting setups right now.":"Starting the first scan…")+'</p></div>')}
