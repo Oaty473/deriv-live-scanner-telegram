@@ -483,11 +483,12 @@ function scanApa(D,price,spr,tt,sym){
  var risk=Math.abs(entry-stop),inside=price>=ob.lo&&price<=ob.hi,notChasing=dir>0?price<=entry+atr5*.5:price>=entry-atr5*.5;
  if(!(risk>0&&isFinite(risk)))return fail("Invalid stop distance. No trade.");
  var rTargets=[10,15,20].map(function(m){return entry+dir*risk*m});
- var liquidity=dir>0?M15.slice(-80).map(function(x){return x.h}):M15.slice(-80).map(function(x){return x.l});
- var nearest=dir>0?Math.max.apply(null,liquidity.filter(function(x){return x>entry})||[]):Math.min.apply(null,liquidity.filter(function(x){return x<entry})||[]);
- var viable=isFinite(nearest)&&nearest>0&&(dir>0?nearest>=entry+risk*10:nearest<=entry-risk*10);
+ var pivots15=piv(M15),liquidity=dir>0?pivots15.H.map(function(x){return x.p}):pivots15.L.map(function(x){return x.p});
+ var targets=[];[10,15,20].forEach(function(mult){var need=entry+dir*risk*mult,eligible=liquidity.filter(function(x){return dir>0?x>=need:x<=need});
+  if(eligible.length){eligible.sort(function(a,b){return dir>0?a-b:b-a});var level=eligible[0];if(!targets.length||Math.abs(level-targets[targets.length-1].price)>risk*.25)targets.push({multiple:mult,price:level,rr:Math.abs(level-entry)/risk})}});
+ var viable=targets.some(function(x){return x.multiple===10});
  R.entry=entry.toFixed(DP)+" (H1 OB midpoint)";R.sl=stop.toFixed(DP);
- R.tp=viable?rTargets.map(function(x,i){return x.toFixed(DP)+" (1:"+[10,15,20][i]+")"}):[];
+ R.tp=targets.map(function(x){return x.price.toFixed(DP)+" (1:"+x.rr.toFixed(1)+")"});
  R.zone="H1 order block "+Math.min(ob.lo,ob.hi).toFixed(DP)+" – "+Math.max(ob.lo,ob.hi).toFixed(DP);
  R.score=10;R.status=inside&&notChasing&&viable?"ELITE":(inside&&notChasing?"SNIPER":"WAITING");
  R.trigger=R.status==="ELITE"?"D1/H4 bias, H1 setup, M15 confirmation and M5 confirmation all passed; price is in the H1 order block and the 1:10 liquidity objective is structurally viable.":R.status==="SNIPER"?"All five timeframe conditions passed and price is in the entry zone. Extended 1:10–1:20 targets are not supported by the currently measured opposing liquidity.":"All confirmations passed. Wait for price to return to the H1 order block; do not chase.";
@@ -495,9 +496,9 @@ function scanApa(D,price,spr,tt,sym){
  if(!notChasing)R.miss.push("Price has moved too far from the planned entry. Wait for a retracement.");
  if(!viable)R.miss.push("Opposing M15 liquidity does not currently support a genuine 1:10 target; extended targets are withheld.");
  R.prow=[["Risk per unit",risk.toFixed(DP)],["H1 order block",R.zone]];
- if(viable)R.prow=R.prow.concat(rTargets.map(function(x,i){return ["Target 1:"+[10,15,20][i],x.toFixed(DP)]}));
- R.ch={bars:bars,tf:"M5",dir:side,price:price,tt:tt,zone:[Math.min(ob.lo,ob.hi),Math.max(ob.lo,ob.hi)],en:entry,sl:stop,tps:viable?rTargets:[],rr:viable?[10,15,20]:[],fig:["APA BLUE · D1/H4 bias aligned","H1 setup confirmed","M15 confirmation passed","M5 confirmation passed","Entry "+entry.toFixed(DP)+" · SL "+stop.toFixed(DP)]};
- if(viable)rTargets.forEach(function(x,i){R.ch.fig.push("TP"+(i+1)+" "+x.toFixed(DP)+" · 1:"+[10,15,20][i])});
+ if(targets.length)R.prow=R.prow.concat(targets.map(function(x){return ["Liquidity target ≥ 1:"+x.multiple,x.price.toFixed(DP)+" (actual 1:"+x.rr.toFixed(1)+")"]}));
+ R.ch={bars:bars,tf:"M5",dir:side,price:price,tt:tt,zone:[Math.min(ob.lo,ob.hi),Math.max(ob.lo,ob.hi)],en:entry,sl:stop,tps:targets.map(function(x){return x.price}),rr:targets.map(function(x){return x.rr}),fig:["APA BLUE · D1/H4 bias aligned","H1 setup confirmed","M15 confirmation passed","M5 confirmation passed","Entry "+entry.toFixed(DP)+" · SL "+stop.toFixed(DP)]};
+ targets.forEach(function(x,i){R.ch.fig.push("TP"+(i+1)+" "+x.price.toFixed(DP)+" · 1:"+x.rr.toFixed(1))});
  return R;
 }
 
